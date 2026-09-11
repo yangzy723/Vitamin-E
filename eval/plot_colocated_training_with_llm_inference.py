@@ -22,7 +22,7 @@ job1_labels = ['ResNet', 'ResNet', 'BERT', 'BERT']
 job2_labels = ['Llama 3', 'GPT-J', 'Llama 3', 'GPT-J']
 gpu_counts = ['H20×1', 'H20×1', 'H20×1', 'H20×1']
 
-systems = ['Temporal', 'MIG', 'MPS', 'Orion', 'LithOS', 'PROTEUS']
+systems = ['Temporal', 'MIG', 'MPS', 'Orion', 'LithOS', 'Vitamin-E']
 
 throughput_data = {
     'Temporal': [0.44, 0.40, 0.42, 0.43],
@@ -30,7 +30,7 @@ throughput_data = {
     'MIG':      [0.50, 0.50, 0.53, 0.50],
     'Orion':    [0.50, 0.55, 0.53, 0.51],
     'LithOS':   [0.53, 0.53, 0.58, 0.54],
-    'PROTEUS':  [0.55, 0.55, 0.60, 0.60],
+    'Vitamin-E': [0.55, 0.55, 0.60, 0.60],
 }
 
 latency_data = {
@@ -39,7 +39,7 @@ latency_data = {
     'MIG':      [10.0, 12.0, 10.0, 12.0],
     'Orion':    [12.0, 15.0, 15.0, 19.0],
     'LithOS':   [5.3, 6.5, 7.6, 8.2],
-    'PROTEUS':  [4.5, 5.9, 7.2, 8.0],
+    'Vitamin-E': [4.5, 5.9, 7.2, 8.0],
 }
 
 colors = ['#D9D9D9', '#F2C078', '#B9A7D0', '#8FB6D8', '#9BCB88', '#E64B3C']

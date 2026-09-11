@@ -17,8 +17,8 @@ OUTPUT_PDF = ROOT / "operator_determinism.pdf"
 
 RESHAPED_COLOR = "#D1A45F"
 RESHAPED_EDGE = "#8A642E"
-PROTEUS_COLOR = "#C73737"
-PROTEUS_DASH = (0, (7.0, 2.2, 1.4, 2.2))
+VITAMIN_E_COLOR = "#C73737"
+VITAMIN_E_DASH = (0, (7.0, 2.2, 1.4, 2.2))
 
 REQUIRED_COLUMNS = {
     "dtype",
@@ -103,8 +103,8 @@ def draw_histogram(
     )
     ax.axvline(
         0.0,
-        color=PROTEUS_COLOR,
-        linestyle=PROTEUS_DASH,
+        color=VITAMIN_E_COLOR,
+        linestyle=VITAMIN_E_DASH,
         linewidth=2.6,
         dash_capstyle="round",
         zorder=5,
@@ -133,11 +133,11 @@ def build_legend_handles():
         Line2D(
             [0],
             [0],
-            color=PROTEUS_COLOR,
-            linestyle=PROTEUS_DASH,
+            color=VITAMIN_E_COLOR,
+            linestyle=VITAMIN_E_DASH,
             linewidth=2.6,
             dash_capstyle="round",
-            label="PROTEUS",
+            label="Vitamin-E",
         ),
     ]
 

@@ -11,7 +11,7 @@ DATA_PATH = ROOT / "determinism" / "determinism_data.pt"
 OUTPUT_PATH = ROOT / "determinism.pdf"
 
 RESHAPING_COLOR = "#1f77b4"
-PROTEUS_COLOR = "#d62728"
+VITAMIN_E_COLOR = "#d62728"
 FLIP_COLOR = "#ff7f0e"
 ZERO_COLOR = "gray"
 
@@ -39,7 +39,7 @@ def configure_style() -> None:
 def draw_stage(
     ax: plt.Axes,
     reshaping_drift,
-    proteus_drift,
+    vitamin_e_drift,
     flip_indices,
     title: str,
 ) -> None:
@@ -55,8 +55,8 @@ def draw_stage(
     )
     ax.plot(
         trials,
-        proteus_drift,
-        color=PROTEUS_COLOR,
+        vitamin_e_drift,
+        color=VITAMIN_E_COLOR,
         alpha=0.9,
         marker="s",
         markersize=MARKER_SIZE,
@@ -115,11 +115,11 @@ def build_legend_handles() -> list[Line2D]:
         Line2D(
             [0],
             [0],
-            color=PROTEUS_COLOR,
+            color=VITAMIN_E_COLOR,
             linewidth=LINE_WIDTH,
             marker="s",
             markersize=21,
-            label="PROTEUS",
+            label="Vitamin-E",
         ),
         Line2D(
             [0],
