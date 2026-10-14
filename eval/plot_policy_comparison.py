@@ -82,8 +82,11 @@ metric_specs = {
 # ============================================================
 
 plt.rcParams.update({
+    # Avoid Type 3 fonts in exported PDF/EPS figures.
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
     "font.family": "serif",
-    "font.serif": ["Times New Roman", "Nimbus Roman", "DejaVu Serif", "STIXGeneral"],
+    "font.serif": ["Times New Roman", "Liberation Serif", "Nimbus Roman", "DejaVu Serif", "STIXGeneral"],
     "mathtext.fontset": "stix",
 
     "font.size": 12,

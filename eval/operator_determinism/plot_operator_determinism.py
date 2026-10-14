@@ -9,10 +9,24 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parent
+
 PANELS = (
-    (r"(a) Reduction Kernel ($\times 10^{-2}$)", ROOT / "reduction.csv", 64, 1e2, 16),
-    (r"(b) Split-K GEMM Kernel ($\times 10^{-3}$)", ROOT / "splitk_gemm.csv", 1, 1e3, 15),
+    (
+        r"(a) Reduction Kernel ($\times 10^{-2}$)",
+        ROOT / "reduction.csv",
+        64,
+        1e2,
+        16,
+    ),
+    (
+        r"(b) Split-K GEMM Kernel ($\times 10^{-3}$)",
+        ROOT / "splitk_gemm.csv",
+        1,
+        1e3,
+        15,
+    ),
 )
+
 OUTPUT_PDF = ROOT / "operator_determinism.pdf"
 
 RESHAPED_COLOR = "#D1A45F"
@@ -30,6 +44,7 @@ REQUIRED_COLUMNS = {
     "reference_inf_count",
     "test_inf_count",
 }
+
 NONFINITE_COLUMNS = [
     "reference_nan_count",
     "test_nan_count",
@@ -40,44 +55,109 @@ NONFINITE_COLUMNS = [
 
 def configure_style() -> None:
     plt.rcParams.update({
+        # --------------------------------------------
+        # PDF font embedding
+        # Avoid Type 3 fonts rejected by HotCRP / ACM
+        # --------------------------------------------
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
+
+        # --------------------------------------------
+        # Font configuration
+        # --------------------------------------------
         "font.family": "serif",
-        "font.serif": ["Times New Roman", "Nimbus Roman", "DejaVu Serif"],
+        "font.serif": [
+            "Times New Roman",
+            "Nimbus Roman",
+            "DejaVu Serif",
+        ],
         "mathtext.fontset": "stix",
+
         "font.size": 11,
         "axes.titlesize": 20,
         "xtick.labelsize": 15,
         "ytick.labelsize": 15,
         "legend.fontsize": 19,
+
+        # --------------------------------------------
+        # Axis appearance
+        # --------------------------------------------
         "axes.linewidth": 1.0,
         "axes.spines.top": False,
         "axes.spines.right": False,
         "axes.edgecolor": "#303030",
+
+        # --------------------------------------------
+        # Background and rendering
+        # --------------------------------------------
         "figure.facecolor": "white",
         "axes.facecolor": "white",
         "savefig.dpi": 400,
     })
 
 
-def load_reshaped_drift(path: Path, baseline: int, scale: float) -> np.ndarray:
+def load_reshaped_drift(
+    path: Path,
+    baseline: int,
+    scale: float,
+) -> np.ndarray:
+
     dataframe = pd.read_csv(path)
+
     missing = REQUIRED_COLUMNS - set(dataframe.columns)
     if missing:
-        raise ValueError(f"{path.name} is missing columns: {sorted(missing)}")
+        raise ValueError(
+            f"{path.name} is missing columns: {sorted(missing)}"
+        )
 
-    accumulation = dataframe["accumulation"].astype(str).str.strip().str.lower()
+    accumulation = (
+        dataframe["accumulation"]
+        .astype(str)
+        .str.strip()
+        .str.lower()
+    )
+
     if set(accumulation) != {"fp32"}:
-        raise ValueError(f"{path.name} was not produced with FP32 accumulation")
+        raise ValueError(
+            f"{path.name} was not produced with FP32 accumulation"
+        )
+
     if dataframe[NONFINITE_COLUMNS].to_numpy().sum() != 0:
-        raise ValueError(f"{path.name} contains non-finite outputs")
+        raise ValueError(
+            f"{path.name} contains non-finite outputs"
+        )
 
     selected = dataframe[
-        (dataframe["dtype"].str.strip().str.lower() == "fp32")
-        & (dataframe["test_shape"].astype(int) != baseline)
+        (
+            dataframe["dtype"]
+            .str.strip()
+            .str.lower() == "fp32"
+        )
+        & (
+            dataframe["test_shape"].astype(int) != baseline
+        )
     ]
-    if selected.empty:
-        raise ValueError(f"{path.name} contains no reshaped FP32 trials")
 
-    return selected["max_abs"].to_numpy(dtype=float) * scale
+    if selected.empty:
+        raise ValueError(
+            f"{path.name} contains no reshaped FP32 trials"
+        )
+
+    values = (
+        selected["max_abs"].to_numpy(dtype=float) * scale
+    )
+
+    if not np.all(np.isfinite(values)):
+        raise ValueError(
+            f"{path.name} contains invalid numerical drift values"
+        )
+
+    if np.any(values < 0):
+        raise ValueError(
+            f"{path.name} contains negative absolute drift"
+        )
+
+    return values
 
 
 def draw_histogram(
@@ -86,10 +166,26 @@ def draw_histogram(
     title: str,
     number_of_bins: int,
 ) -> None:
-    maximum = float(values.max())
-    edges = np.linspace(0.0, maximum * 1.025, number_of_bins + 1)
-    weights = np.full(values.size, 100.0 / values.size)
 
+    maximum = float(values.max())
+
+    if maximum <= 0.0:
+        raise ValueError(
+            f"Cannot draw histogram with zero maximum drift: {title}"
+        )
+
+    edges = np.linspace(
+        0.0,
+        maximum * 1.025,
+        number_of_bins + 1,
+    )
+
+    weights = np.full(
+        values.size,
+        100.0 / values.size,
+    )
+
+    # Kernel reshaping distribution
     ax.hist(
         values,
         bins=edges,
@@ -101,6 +197,8 @@ def draw_histogram(
         rwidth=0.76,
         zorder=3,
     )
+
+    # Vitamin-E: zero numerical drift
     ax.axvline(
         0.0,
         color=VITAMIN_E_COLOR,
@@ -110,15 +208,48 @@ def draw_histogram(
         zorder=5,
     )
 
-    ax.set_title(title, pad=12)
-    # Separate the zero-drift reference from the left spine.
-    ax.set_xlim(-maximum * 0.045, maximum * 1.055)
+    ax.set_title(
+        title,
+        pad=12,
+    )
+
+    # Separate zero-drift reference from the left spine
+    ax.set_xlim(
+        -maximum * 0.045,
+        maximum * 1.055,
+    )
+
     ax.set_ylim(bottom=0.0)
-    ax.xaxis.set_major_locator(MaxNLocator(5))
-    ax.yaxis.set_major_locator(MaxNLocator(5))
-    ax.grid(axis="y", linestyle="--", linewidth=0.65, alpha=0.30, zorder=0)
-    ax.tick_params(axis="x", length=4.0, width=1.0, pad=4)
-    ax.tick_params(axis="y", length=3.5, width=0.9)
+
+    ax.xaxis.set_major_locator(
+        MaxNLocator(5)
+    )
+
+    ax.yaxis.set_major_locator(
+        MaxNLocator(5)
+    )
+
+    ax.grid(
+        axis="y",
+        linestyle="--",
+        linewidth=0.65,
+        alpha=0.30,
+        zorder=0,
+    )
+
+    ax.tick_params(
+        axis="x",
+        length=4.0,
+        width=1.0,
+        pad=4,
+    )
+
+    ax.tick_params(
+        axis="y",
+        length=3.5,
+        width=0.9,
+    )
+
     ax.set_axisbelow(True)
 
 
@@ -143,22 +274,55 @@ def build_legend_handles():
 
 
 def main() -> None:
+
     configure_style()
+
     values_by_panel = [
-        load_reshaped_drift(path, baseline, scale)
+        load_reshaped_drift(
+            path,
+            baseline,
+            scale,
+        )
         for _, path, baseline, scale, _ in PANELS
     ]
 
-    fig, axes = plt.subplots(1, 2, figsize=(8.8, 3.35), sharey=True)
-    for ax, values, (title, _, _, _, bins) in zip(
+    fig, axes = plt.subplots(
+        1,
+        2,
+        figsize=(8.8, 3.35),
+        sharey=True,
+    )
+
+    for ax, values, (
+        title,
+        _,
+        _,
+        _,
+        bins,
+    ) in zip(
         axes,
         values_by_panel,
         PANELS,
     ):
-        draw_histogram(ax, values, title, bins)
+        draw_histogram(
+            ax,
+            values,
+            title,
+            bins,
+        )
 
-    axes[0].set_ylabel("Trial Frequency (%)", fontsize=19, labelpad=8)
-    fig.supxlabel("Numerical Drift", fontsize=20, y=0.02)
+    axes[0].set_ylabel(
+        "Trial Frequency (%)",
+        fontsize=19,
+        labelpad=8,
+    )
+
+    fig.supxlabel(
+        "Numerical Drift",
+        fontsize=20,
+        y=0.02,
+    )
+
     fig.legend(
         handles=build_legend_handles(),
         loc="upper center",
@@ -169,6 +333,7 @@ def main() -> None:
         handletextpad=0.65,
         columnspacing=1.8,
     )
+
     fig.subplots_adjust(
         left=0.095,
         right=0.99,
@@ -177,10 +342,22 @@ def main() -> None:
         wspace=0.08,
     )
 
-    OUTPUT_PDF.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUTPUT_PDF, bbox_inches="tight")
+    OUTPUT_PDF.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    fig.savefig(
+        OUTPUT_PDF,
+        format="pdf",
+        bbox_inches="tight",
+    )
+
     plt.close(fig)
-    print(f"Saved operator determinism plot to {OUTPUT_PDF}")
+
+    print(
+        f"Saved operator determinism plot to {OUTPUT_PDF}"
+    )
 
 
 if __name__ == "__main__":

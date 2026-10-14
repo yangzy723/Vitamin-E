@@ -22,13 +22,30 @@ FLIP_MARKER_SIZE = 450
 
 def configure_style() -> None:
     plt.rcParams.update({
+        # --------------------------------------------
+        # PDF font embedding: avoid Type 3 fonts
+        # --------------------------------------------
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
+
+        # --------------------------------------------
+        # Original font configuration
+        # --------------------------------------------
         "font.family": "serif",
-        "font.serif": ["Times New Roman", "DejaVu Serif", "Liberation Serif"],
+        "font.serif": [
+            "Times New Roman",
+            "DejaVu Serif",
+            "Liberation Serif",
+        ],
         "font.size": 32,
         "axes.labelsize": 36,
         "axes.labelweight": "bold",
         "xtick.labelsize": 36,
         "ytick.labelsize": 36,
+
+        # --------------------------------------------
+        # Original grid and rendering configuration
+        # --------------------------------------------
         "axes.grid": True,
         "grid.alpha": 0.5,
         "grid.linestyle": "--",
@@ -53,6 +70,7 @@ def draw_stage(
         alpha=0.7,
         zorder=1,
     )
+
     ax.plot(
         trials,
         vitamin_e_drift,
@@ -63,6 +81,7 @@ def draw_stage(
         linewidth=LINE_WIDTH,
         zorder=2,
     )
+
     ax.plot(
         trials,
         reshaping_drift,
@@ -75,7 +94,11 @@ def draw_stage(
     )
 
     if flip_indices:
-        flip_values = [reshaping_drift[index] for index in flip_indices]
+        flip_values = [
+            reshaping_drift[index]
+            for index in flip_indices
+        ]
+
         ax.scatter(
             flip_indices,
             flip_values,
@@ -86,6 +109,7 @@ def draw_stage(
             linewidth=2.5,
             zorder=5,
         )
+
         for index in flip_indices:
             ax.axvspan(
                 index - 0.5,
@@ -95,9 +119,23 @@ def draw_stage(
                 zorder=0,
             )
 
-    ax.set_title(title, fontsize=40, fontweight="bold", pad=12)
-    ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-    ax.ticklabel_format(style="sci", axis="y", scilimits=(0, 0))
+    ax.set_title(
+        title,
+        fontsize=40,
+        fontweight="bold",
+        pad=12,
+    )
+
+    ax.yaxis.set_major_formatter(
+        ScalarFormatter(useMathText=True)
+    )
+
+    ax.ticklabel_format(
+        style="sci",
+        axis="y",
+        scilimits=(0, 0),
+    )
+
     ax.yaxis.get_offset_text().set_fontsize(36)
 
 
@@ -146,13 +184,28 @@ def build_legend_handles() -> list[Line2D]:
 
 def main() -> None:
     if not DATA_PATH.exists():
-        raise FileNotFoundError(f"Determinism data not found: {DATA_PATH}")
+        raise FileNotFoundError(
+            f"Determinism data not found: {DATA_PATH}"
+        )
 
-    data = torch.load(DATA_PATH, map_location="cpu")
-    flip_indices = [int(index) for index in data.get("flip_both_indices", [])]
+    data = torch.load(
+        DATA_PATH,
+        map_location="cpu",
+    )
+
+    flip_indices = [
+        int(index)
+        for index in data.get("flip_both_indices", [])
+    ]
 
     configure_style()
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(24, 12.0), sharex=True)
+
+    fig, (ax1, ax2) = plt.subplots(
+        2,
+        1,
+        figsize=(24, 12.0),
+        sharex=True,
+    )
 
     draw_stage(
         ax1,
@@ -161,6 +214,7 @@ def main() -> None:
         flip_indices,
         "Stage 1: LM-Head MatMul Logit Drift",
     )
+
     draw_stage(
         ax2,
         data["drift_both_probs"],
@@ -175,6 +229,7 @@ def main() -> None:
         fontsize=36,
         x=0.018,
     )
+
     fig.subplots_adjust(
         left=0.085,
         right=0.997,
@@ -182,6 +237,7 @@ def main() -> None:
         top=0.825,
         hspace=0.18,
     )
+
     fig.legend(
         handles=build_legend_handles(),
         loc="upper left",
@@ -197,10 +253,22 @@ def main() -> None:
         columnspacing=0.7,
     )
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUTPUT_PATH, bbox_inches="tight")
+    OUTPUT_PATH.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    fig.savefig(
+        OUTPUT_PATH,
+        format="pdf",
+        bbox_inches="tight",
+    )
+
     plt.close(fig)
-    print(f"Saved determinism plot to {OUTPUT_PATH}")
+
+    print(
+        f"Saved determinism plot to {OUTPUT_PATH}"
+    )
 
 
 if __name__ == "__main__":
